@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../auth');
 const user = require('../controller/user');
-const otp = require('../controller/otp');
+const address = require('../controller/address');
 
-router.get("/list", user.list);
-router.post("/signup", user.signup);
-router.post("/signin", user.signin);
-router.post("/send/otp", otp.sendOtp);
+router.post("/add/address", auth.user, user.addAddress);
+router.patch("/update/address", auth.user, address.update);
+router.patch("/update/phone", auth.user, user.updatePhone);
+router.post("/add/post", auth.user, user.addPost);
 
 module.exports = router;

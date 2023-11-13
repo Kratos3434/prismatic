@@ -23,6 +23,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime?
   address Address?
+  posts Post[]
+  comments Comment[]
 }
 
 model Address {
@@ -34,4 +36,24 @@ model Address {
   postalCode String
   province String
   country String
+}
+
+model Post {
+  id Int @id @default(autoincrement())
+  author User @relation(fields: [authorId], references: [id])
+  authorId Int
+  featureImage String
+  description String
+  likes Int @default(0)
+  shares Int @default(0)
+  comments Comment[]
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+  post Post @relation(fields: [postId], references: [id])
+  postId Int
+  comment String
+  author User @relation(fields: [authorId], references: [id])
+  authorId Int
 }

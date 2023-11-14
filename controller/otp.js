@@ -10,15 +10,9 @@ const emailService = require('./email');
  * @param {Response} res 
  */
 module.exports.sendOtp = async (req, res) => {
-    const { firstName, lastName, email, password, password2, gender } = req.body;
+    const { email } = req.body;
     try {
-        if(!firstName) throw "First Name is required";
-        if(!lastName) throw "Last Name is required";
         if(!email) throw "Email is required";
-        if(!password) throw "Password is required";
-        if(!password2) throw "Please confirm your password";
-        if(password != password2) throw "Passwords do not match";
-        if(!gender) throw "Your gender is required";
         const otp = "123444";
 
         const user = await prisma.user.findFirst({

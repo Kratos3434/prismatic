@@ -52,3 +52,19 @@ module.exports.update = async (req, res) => {
     res.status(400).json({status: false, error: err});
   }
 }
+
+
+//!WARNING this is only for testing and should not be inproduction
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.deleteAll = async (req, res) => {
+  try {
+    await prisma.address.deleteMany({});
+    res.status(200).json({status: true, msg: "All address successfully deleted"});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}

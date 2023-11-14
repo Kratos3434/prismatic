@@ -9,5 +9,8 @@ router.get("/user/list", auth.admin, user.list);
 router.get('/post/list', auth.admin, post.list);
 router.get("/address/list", auth.admin, address.list);
 
+router.delete("/delete/posts", auth.admin, post.deleteAll);
+router.delete("/delete/addresses", auth.admin, address.deleteAll);
+router.delete("/delete/users", auth.admin, user.deleteAll);
 
 module.exports = router;

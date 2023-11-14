@@ -25,6 +25,8 @@ model User {
   address Address?
   posts Post[]
   comments Comment[]
+  replies Reply[]
+  disabledAt DateTime?
 }
 
 model Address {
@@ -58,6 +60,17 @@ model Comment {
   post Post @relation(fields: [postId], references: [id])
   postId Int
   comment String
+  author User @relation(fields: [authorId], references: [id])
+  authorId Int
+  replies Reply[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+}
+
+model Reply {
+  id Int @id @default(autoincrement())
+  comment Comment @relation(fields: [commentId], references: [id])
+  commentId Int
   author User @relation(fields: [authorId], references: [id])
   authorId Int
   createdAt DateTime @default(now())

@@ -18,6 +18,7 @@ module.exports.list = async (req, res) => {
       include: {
         address: true,
         posts: true,
+        comments: true
       },
     });
     res.status(200).json({ status: true, data: users });
@@ -303,6 +304,94 @@ module.exports.deletePost = async (req, res) => {
     }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.addCommentToPost = async (req, res) => {
+    const { email, postId, comment } = req.body;
+    try {
+        if(!email) throw "Email is required";
+        if(!postId) throw "Post Id is rquired";
+        if(!+postId) throw "Post Id is not a valid number";
+        if(!comment) throw "Comment is required";
+
+        const user = await prisma.user.findUnique({
+            where: {
+                email
+            },
+            include: {
+                posts: {
+                    where: {
+                        id: +postId
+                    }
+                }
+            }
+        });
+
+        if(!user) throw "This user does not exist";
+        if(user.posts.length == 0) throw "This post does not exist";
+
+        const newComment = await prisma.comment.create({
+            data: {
+                comment,
+                authorId: user.id,
+                postId: user.posts[0].id
+            }
+        });
+
+        res.status(200).json({status: true, msg: "Comment successfully added", data: newComment});
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({status: false, error: err});
+    }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.likePost = async (req, res) => {
+    const { email, postId } = req.body;
+    try {
+        if(!email) throw "Email is required";
+        if(!postId) throw "Post Id is required";
+        if(!+postId) throw "Post Id is not a valid number";
+
+        const user = await prisma.user.findUnique({
+            where: {
+                email
+            }
+        });
+
+        if(!user) throw "This user does not exist";
+
+        const post = await prisma.post.findUnique({
+            where: {
+                id: postId
+            }
+        });
+
+        if(!post) throw "This post does not exist";
+
+        await prisma.post.update({
+            where: {
+                id: post.id
+            },
+            data: {
+                likes: post.likes += 1,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(200).json({status: true, msg: "Post liked successfully"});
+    } catch (err) {
+        console.log(err)
+        res.status(400).json({status: false, error: err});
+    }
+}
 //!WARNING this is only for testing and should not be in production
 /**
  *

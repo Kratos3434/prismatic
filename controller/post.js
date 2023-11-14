@@ -11,7 +11,8 @@ module.exports.list = async (req, res) => {
   try {
     const posts = await prisma.post.findMany({
       include: {
-        author: true
+        author: true,
+        comments: true
       }
     });
     res.status(200).json({status: true, data: posts});

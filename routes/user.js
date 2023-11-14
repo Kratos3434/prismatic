@@ -12,5 +12,7 @@ router.patch("/update/phone", auth.user, user.updatePhone);
 router.post("/add/post", auth.user, upload.single("featureImage"), user.addPost);
 
 router.delete('/delete/post', auth.user, user.deletePost);
+router.post("/add/comment", auth.user, user.addCommentToPost);
+router.put("/like/post", user.likePost);
 
 module.exports = router;

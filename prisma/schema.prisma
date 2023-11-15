@@ -26,6 +26,7 @@ model User {
   posts Post[]
   comments Comment[]
   replies Reply[]
+  resetToken ResetToken?
   disabledAt DateTime?
 }
 
@@ -75,4 +76,12 @@ model Reply {
   authorId Int
   createdAt DateTime @default(now())
   updatedAt DateTime?
+}
+
+model ResetToken {
+  id Int @id @default(autoincrement())
+  token String @unique
+  user User @relation(fields: [userId], references: [id])
+  userId Int @unique
+  createdAt DateTime @default(now())
 }

@@ -13,6 +13,7 @@ router.post("/add/post", auth.user, upload.single("featureImage"), user.addPost)
 
 router.delete('/delete/post', auth.user, user.deletePost);
 router.post("/add/comment", auth.user, user.addCommentToPost);
-router.put("/like/post", user.likePost);
+router.put("/like/post", auth.user, user.likePost);
+router.patch("/change/password", auth.user, user.changePassword);
 
 module.exports = router;

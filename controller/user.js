@@ -6,6 +6,8 @@ const Otp = require("../mongoose/schema/otp");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
+const crypto = require('crypto');
+//const ResetToken = require('../mongoose/schema/resetToken');
 
 /**
  *
@@ -392,6 +394,206 @@ module.exports.likePost = async (req, res) => {
         res.status(400).json({status: false, error: err});
     }
 }
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.changePassword = async (req, res) => {
+  const { email, oldPassword, password, password2 } = req.body;
+  try {
+    if(!email) throw "Email is required";
+    if(!oldPassword) throw "Please enter your old password";
+    if(!password) throw "Please enter your new password";
+    if(!password2) throw "Please confirm your new password";
+    if(password != password2) throw "Passwords do not match";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email
+      }
+    });
+
+    if(!user) throw "This user does not exist";
+
+    const result = await bcrypt.compare(oldPassword, user.password);
+    if(!result) throw "Incorrect password";
+
+    const result2 = await bcrypt.compare(password, user.password);
+    if(result2) throw "Your new password must not be the same as your current password!";
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        password: hash
+      }
+    });
+
+    res.status(200).json({status: true, msg: "Password changed successfully"});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.forgotPassword = async (req, res) => {
+  const { token, password, password2 } = req.body;
+  try {
+    if(!token) throw "Token is missing";
+    if(!password) throw "Password is required";
+    if(!password2) throw "Please confirm your password";
+    if(password != password2) throw "Passwords do not match";
+    const resetToken = await prisma.resetToken.findUnique({
+      where: {
+        token
+      },
+      include: {
+        user: true
+      }
+    })
+
+    if(!resetToken) throw "Invalid token";
+
+    const minutes = calculateTimeDiff(resetToken.createdAt);
+    console.log("\nMinutes:", minutes);
+
+    if(minutes > 7) {
+      throw {status: 401, error: "This link has expired"};
+    }
+    const hash = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: {
+        id: resetToken.user.id
+      },
+      data: {
+        password: hash
+      }
+    });
+
+    await prisma.resetToken.delete({
+      where: {
+        token
+      }
+    });
+
+    res.status(200).json({status: true, msg: "Password changed successfully"});
+  } catch (err) {
+    if(err.status) {
+      return res.status(401).json({status: false, error: err.error});
+    }
+    res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.sendResetPasswordLink = async (req, res) => {
+  const { email } = req.params;
+  try {
+    if(!email) throw "Email is required";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email
+      },
+      include: {
+        resetToken: true
+      }
+    });
+
+    if(!user) throw "This email does not exist";
+    const token = crypto.randomBytes(32).toString('hex');
+    console.log("Token:", token);
+    const url = `http://localhost:3000/reset?token=${token}`;
+
+    if(user.resetToken && user.resetToken.token) {
+      await prisma.resetToken.update({
+        where: {
+          id: user.resetToken.id
+        },
+        data: {
+          token: token,
+          createdAt: new Date()
+        }
+      })
+    } else {
+      await prisma.resetToken.create({
+        data: {
+          token: token,
+          user: {
+            connect: {
+              id: user.id
+            }
+          }
+        }
+      });
+    }
+
+    res.status(200).json({status: true, data: url, msg: "Password reset link sent successfully"});
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.verifyResetToken = async (req, res) => {
+  const { token } = req.params;
+  try {
+    if(!token) throw {status: 400, error: "Token is required"};
+
+    const result = await prisma.resetToken.findUnique({
+      where: {
+        token
+      }
+    });
+
+    if(!result) throw {status: 400, error: "Invalid token"}
+    const minutes = calculateTimeDiff(result.createdAt);
+    console.log("\nMinutes:", minutes);
+
+    if(minutes > 7) {
+      throw {status: 401, error: "This link has expired"};
+    }
+
+    res.status(200).json({status: true, msg: "Token is valid"})
+  } catch (err) {
+    if(err.status) {
+      return res.status(err.status).json({status: false, error: err.error});
+    }
+    res.status(401).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Date} date recent time
+ * @returns {number}
+ */
+const calculateTimeDiff = (date) => {
+  const currentDate = new Date();
+  const timeDiff = Math.abs(date.getTime() - currentDate.getTime());
+  const timeDiffInSeconds = Math.ceil(timeDiff / 1000);
+  return timeDiffInSeconds / 60;
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

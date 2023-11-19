@@ -5,15 +5,20 @@ const mongo = require("./mongoHelper");
 const cookieParser = require("cookie-parser");
 const cors = require('cors');
 require("dotenv").config();
+const clientSessions = require('client-sessions');
 const cloudinary = require('cloudinary').v2;
-
+const auth = require('./auth');
 //route imports
 const publicRoute = require("./routes/public/user");
 const adminRoute = require("./routes/admin");
 const userRoute = require('./routes/user');
 
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  next();
+});
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -26,8 +31,8 @@ cloudinary.config({
 });
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header('Access-Control-Allow-Credentials', true);
   next();
 });
 

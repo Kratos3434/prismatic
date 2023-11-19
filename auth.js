@@ -1,4 +1,6 @@
 const { Request, Response, NextFunction } = require('express');
+const jwt = require("jsonwebtoken");
+const fs = require('fs');
 
 /**
  * 
@@ -43,5 +45,26 @@ module.exports.user = async (req, res, next) => {
     next();
   } catch (err) {
     res.status(401).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {NextFunction} next 
+ */
+module.exports.authUser = (req, res, next) => {
+  try {
+    if(!req.cookies.token) {
+      throw "Unauthorized or Expired";
+    }
+    const privateKey = fs.readFileSync(`${__dirname}/privateKey.key`);
+    const result = jwt.verify(req.cookies.token, privateKey);
+    if(!result) throw "Unauthorized";
+    next();
+  } catch (err) {
+    console.log(err)
+    res.status(401).json({status: false, err: err});
   }
 }

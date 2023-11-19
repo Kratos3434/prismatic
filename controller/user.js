@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 const crypto = require('crypto');
+const fs = require('fs');
 //const ResetToken = require('../mongoose/schema/resetToken');
 
 /**
@@ -77,6 +78,11 @@ module.exports.signup = async (req, res) => {
   }
 };
 
+const prsimaExclude = (user, keys) => {
+  return Object.fromEntries(
+    Object.entries(user).filter(([key]) => !keys.includes(key))
+  )
+}
 /**
  *
  * @param {Request} req
@@ -100,13 +106,17 @@ module.exports.signin = async (req, res) => {
 
     const result = await bcrypt.compare(password, user.password);
     if (!result) throw "Invalid email or password";
-    const token = jwt.sign(user, "fdfdfvdfdfwfgrfgasfds", { expiresIn: "1d" });
+    const userNoPassword = prsimaExclude(user, ['password']);
+    console.log(process.env.JWT_SECRET)
+    const privateKey = fs.readFileSync(`privateKey.key`);
+    const token = jwt.sign(userNoPassword, privateKey, { expiresIn: "1d", algorithm: 'RS256' });
+    console.log("Sign token:", token)
     res.cookie("token", token, {
       httpOnly: false,
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({ status: true, data: token });
+    res.status(200).json({ status: true, data: userNoPassword });
   } catch (err) {
     console.log(err);
     res.status(400).json({ status: false, error: err });

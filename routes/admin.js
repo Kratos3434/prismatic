@@ -9,6 +9,9 @@ const comment = require('../controller/comment');
 router.get("/user/list", auth.admin, user.list);
 router.get('/post/list', auth.admin, post.list);
 router.get("/address/list", auth.admin, address.list);
+router.get("/user/authenticate", auth.admin, auth.authUser, (req, res) => {
+    res.status(200).json({status: true, msg: "Authenticated user"});
+});
 
 router.delete("/delete/posts", auth.admin, post.deleteAll);
 router.delete("/delete/addresses", auth.admin, address.deleteAll);

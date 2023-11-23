@@ -36,17 +36,17 @@ module.exports.list = async (req, res) => {
  * @param {Response} res
  */
 module.exports.signup = async (req, res) => {
-  const { firstName, lastName, email, password, password2, gender, otp } =
-    req.body;
+  const { email, otp } = req.body;
   try {
-    if (!otp) throw "OTP is required";
-    if (!firstName) throw "First Name is required";
-    if (!lastName) throw "Last Name is required";
     if (!email) throw "Email is required";
-    if (!password) throw "Password is required";
-    if (!password2) throw "Please confirm your password";
-    if (password != password2) throw "Passwords do not match";
-    if (!gender) throw "Your gender is required";
+
+    const tempUser = await prisma.temporaryUser.findUnique({
+      where: {
+        email
+      }
+    })
+
+    if(!tempUser) throw "Invalid request";
 
     const user = await prisma.user.findFirst({
       where: {
@@ -59,19 +59,20 @@ module.exports.signup = async (req, res) => {
     if (user) throw "This email has already been taken";
 
     const OTP = await Otp.findOne({ email, otp });
-    if (!OTP) throw "Invalid OTP";
+    if (!OTP) throw "This otp is invalid or expired";
 
-    const hash = await bcrypt.hash(password, 10);
+    //const hash = await bcrypt.hash(password, 10);
 
     await prisma.user.create({
       data: {
-        firstName,
-        lastName,
-        email,
-        password: hash,
-        gender,
+        firstName: tempUser.firstName,
+        lastName: tempUser.lastName,
+        email: tempUser.email,
+        password: tempUser.password,
+        gender: tempUser.gender,
       },
     });
+
     res.status(200).json({ status: true, msg: "Signup successful" });
   } catch (err) {
     res.status(400).json({ status: false, error: err });
@@ -403,6 +404,30 @@ module.exports.likePost = async (req, res) => {
         console.log(err)
         res.status(400).json({status: false, error: err});
     }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getValidatingUser = async (req, res) => {
+  const {retrieveToken} = req.params;
+  try {
+    if(!retrieveToken) throw {code: 401, msg: "Invalid token"};
+    console.log("WTF:", retrieveToken);
+    const user = await prisma.temporaryUser.findUnique({
+      where: {
+        retrieveToken
+      }
+    });
+
+    if(!user) throw {code: 401, msg: "Invalid token"};
+
+    res.status(200).json({status: true, data: { email: user.email }});
+  } catch (err) {
+    res.status(err.code).json({status: false, msg: err.msg});
+  }
 }
 
 /**

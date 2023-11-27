@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 const emailService = require('./email');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const otpGenrator = require('otp-generator');
 
 /**
  * 
@@ -14,15 +15,16 @@ const crypto = require('crypto');
 module.exports.sendOtp = async (req, res) => {
     const { firstName, lastName, password, password2, email, gender } = req.body;
     try {
-        if(!firstName) throw "First name is required";
-        if(!lastName) throw "Last name is required";
-        if(!email) throw "Email is required";
-        if(!password) throw "Password is required";
-        if(!password2) throw "Please confirm your password";
-        if(password != password2) throw "Passwords do not match";
-        if(!gender) throw "Gender is required";
+        if (!firstName) throw "First name is required";
+        if (!lastName) throw "Last name is required";
+        if (!email) throw "Email is required";
+        if (!password) throw "Password is required";
+        if (!password2) throw "Please confirm your password";
+        if (password != password2) throw "Passwords do not match";
+        if (!gender) throw "Gender is required";
 
-        const otp = "123444";
+        const otp = otpGenrator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+
         console.log("EMAIL:", email);
 
         const user = await prisma.user.findFirst({
@@ -33,15 +35,20 @@ module.exports.sendOtp = async (req, res) => {
             }
         })
 
-        if(user) throw "This email has already been taken";
+        if (user) throw "This email has already been taken";
 
-        const o = await Otp.findOne({email});
-        if(o) throw "ERROR: This email is already waiting for validation";
+        const o = await Otp.findOne({ email });
+        if (o) {
+            o.otp = otp;
+            await o.save();
+        } else {
+            const newOtp = new Otp({
+                otp,
+                email
+            });
 
-        const newOtp = new Otp({
-            otp,
-            email
-        });
+            await newOtp.save();
+        }
 
         const hash = await bcrypt.hash(password, 10);
 
@@ -51,7 +58,7 @@ module.exports.sendOtp = async (req, res) => {
             }
         });
         const retrieveToken = crypto.randomBytes(32).toString('hex');
-        if(tempUser) {
+        if (tempUser) {
             await prisma.temporaryUser.update({
                 where: {
                     email
@@ -76,8 +83,6 @@ module.exports.sendOtp = async (req, res) => {
                 }
             })
         }
-
-        await newOtp.save();
         await emailService.send("keithcarlos34@gmail.com", otp);
         console.log("Retrieve token:", retrieveToken);
         res.cookie("retrieveToken", retrieveToken, {
@@ -85,9 +90,10 @@ module.exports.sendOtp = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000,
         });
 
-        res.status(200).json({status: true, data: newOtp});
+        res.status(200).json({ status: true, data: otp });
     } catch (err) {
-        res.status(400).json({status: false, error: err});
+        console.log(err)
+        res.status(400).json({ status: false, error: err });
     }
 }
 
@@ -105,13 +111,14 @@ module.exports.resend = async (req, res) => {
             }
         });
 
-        if(!tempUser) throw "Invalid request";
+        if (!tempUser) throw "Invalid request";
 
-        const o = await Otp.findOne({email});
+        const o = await Otp.findOne({ email });
         console.log("OTP:", o);
-        if(o) throw "Please check your email or spam for the otp";
+        if (o) throw "Please check your email or spam for the otp";
 
-        const otp = "123444";
+        const otp = otpGenrator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+
         const newOtp = new Otp({
             otp,
             email
@@ -120,8 +127,8 @@ module.exports.resend = async (req, res) => {
         await newOtp.save();
         await emailService.send("keithcarlos34@gmail.com", otp);
 
-        res.status(200).json({status: true, msg: "Otp successfully resent"});
+        res.status(200).json({ status: true, msg: "Otp successfully resent" });
     } catch (err) {
-        res.status(400).json({status: false, error: err});
+        res.status(400).json({ status: false, error: err });
     }
 }

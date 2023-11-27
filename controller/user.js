@@ -73,6 +73,12 @@ module.exports.signup = async (req, res) => {
       },
     });
 
+    await prisma.temporaryUser.delete({
+      where: {
+        email
+      }
+    });
+    
     res.status(200).json({ status: true, msg: "Signup successful" });
   } catch (err) {
     res.status(400).json({ status: false, error: err });

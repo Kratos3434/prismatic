@@ -11,5 +11,6 @@ router.get("/forgot/link/:email", user.sendResetPasswordLink);
 router.get("/token/verify/:token", user.verifyResetToken);
 router.post("/forgot/password", user.forgotPassword);
 router.post("/resend/otp/:email", auth.authOtp, otp.resend);
+router.get("/user/:name", user.getByName);
 
 module.exports = router;

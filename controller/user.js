@@ -635,6 +635,36 @@ const calculateTimeDiff = (date) => {
   return timeDiffInSeconds / 60;
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByName = async (req, res) => {
+  const {name} = req.params;
+  try {
+    const [firstName, lastName, id] = name.split('.');
+
+    if(!firstName) throw "First name is missing";
+    if(!lastName) throw "Last name is missing";
+    if(!id) throw "ID is missing";
+    if(!+id) throw "Id must be a valid number";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: +id, firstName, lastName
+      }
+    });
+
+    if(!user) throw "User does not exist";
+
+    res.status(200).json({status: true, data: user});
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({status: false, error: err});
+  }
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

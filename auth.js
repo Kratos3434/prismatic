@@ -34,16 +34,15 @@ module.exports.admin = async (req, res, next) => {
  */
 module.exports.user = async (req, res, next) => {
   try {
-    if(!req.cookies.token) {
-      throw "Unauthorized or Expired";
-    }
     if(!req.headers.authorization) {
       throw "Unauthorized";
     }
     const bearerToken = req.headers.authorization.split(' ')[1];
-    if(bearerToken != req.cookies.token) {
-      throw "Unauthorized";
-    }
+
+    if(bearerToken == "undefined") throw "Unauthorized";
+    const privateKey = fs.readFileSync(`${__dirname}/privateKey.key`);
+    const result = jwt.verify(bearerToken, privateKey);
+    if(!result) throw "Unauthorized";
     next();
   } catch (err) {
     res.status(401).json({status: false, error: err});

@@ -10,6 +10,11 @@ const prisma = new PrismaClient();
 module.exports.list = async (req, res) => {
   try {
     const posts = await prisma.post.findMany({
+      orderBy: [
+        {
+          createdAt: 'desc'
+        }
+      ],
       include: {
         author: true,
         comments: true
@@ -17,6 +22,7 @@ module.exports.list = async (req, res) => {
     });
     res.status(200).json({status: true, data: posts});
   } catch (err) {
+    console.log(err)
     res.status(400).json({status: false, error: err});
   }
 }

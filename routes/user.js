@@ -15,5 +15,7 @@ router.delete('/delete/post', auth.user, user.deletePost);
 router.post("/add/comment", auth.user, user.addCommentToPost);
 router.put("/like/post", auth.user, user.likePost);
 router.patch("/change/password", auth.user, user.changePassword);
+router.patch("/update/profilepicture", auth.user, upload.single('profilepicture'), user.changeProfilePic);
+router.patch("/update/coverpicture", auth.user, upload.single('coverpicture'), user.changeCoverPhoto);
 
 module.exports = router;

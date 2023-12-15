@@ -289,6 +289,153 @@ module.exports.addPost = async (req, res) => {
  * @param {Request} req 
  * @param {Response} res 
  */
+module.exports.changeProfilePic = async (req, res) => {
+  const { email } = req.body;
+  try {
+    if (!email) throw "Email is required";
+
+    const user = await prisma.user.findUnique({
+        where: {email}
+    });
+    if(!user) throw "This user does not exist";
+
+    if (req.file) {
+      console.log("File:", req.file)
+      const streamUpload = (req) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { resource_type: "auto" },
+            (error, result) => {
+              if (result) {
+                resolve(result);
+              } else {
+                reject(error);
+              }
+            }
+          );
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+
+      const upload = async (req) => {
+        try {
+          const result = await streamUpload(req);
+          return result;
+        } catch (err) {
+          console.log(err);
+          throw err;
+        }
+      };
+
+      upload(req).then((uploaded) => {
+        if (!uploaded) {
+          return res
+            .status(400)
+            .json({
+              status: false,
+              error: "Something went wrong while uploading",
+            });
+        }
+        processPost(uploaded.url);
+      });
+
+      const processPost = async (imageUrl) => {
+        const result = await prisma.user.update({
+          where: {
+            email
+          },
+          data: {
+            profilePicture: imageUrl
+          }
+        });
+
+        return res.status(200).json({status: true , data: result, msg: "Pofile picture updated successfully"});
+      };
+
+    } else {
+        return res.status(400).json({status: false, error: "Image is required"});
+    }
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+
+module.exports.changeCoverPhoto = async (req, res) => {
+  const { email } = req.body;
+  try {
+    if (!email) throw "Email is required";
+
+    const user = await prisma.user.findUnique({
+        where: {email}
+    });
+    if(!user) throw "This user does not exist";
+
+    if (req.file) {
+      console.log("File:", req.file)
+      const streamUpload = (req) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { resource_type: "auto" },
+            (error, result) => {
+              if (result) {
+                resolve(result);
+              } else {
+                reject(error);
+              }
+            }
+          );
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+
+      const upload = async (req) => {
+        try {
+          const result = await streamUpload(req);
+          return result;
+        } catch (err) {
+          console.log(err);
+          throw err;
+        }
+      };
+
+      upload(req).then((uploaded) => {
+        if (!uploaded) {
+          return res
+            .status(400)
+            .json({
+              status: false,
+              error: "Something went wrong while uploading",
+            });
+        }
+        processPost(uploaded.url);
+      });
+
+      const processPost = async (imageUrl) => {
+        const result = await prisma.user.update({
+          where: {
+            email
+          },
+          data: {
+            coverPicture: imageUrl
+          }
+        });
+
+        return res.status(200).json({status: true ,data: result, msg: "Cover picture updated successfully"});
+      };
+
+    } else {
+        return res.status(400).json({status: false, error: "Image is required"});
+    }
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
 module.exports.deletePost = async (req, res) => {
     const { email, postId } = req.body;
     try {

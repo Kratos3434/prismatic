@@ -17,5 +17,5 @@ router.put("/like/post", auth.user, user.likePost);
 router.patch("/change/password", auth.user, user.changePassword);
 router.patch("/update/profilepicture", auth.user, upload.single('profilepicture'), user.changeProfilePic);
 router.patch("/update/coverpicture", auth.user, upload.single('coverpicture'), user.changeCoverPhoto);
-
+router.get("/current", auth.user, user.getCurrentUser);
 module.exports = router;

@@ -31,6 +31,33 @@ module.exports.list = async (req, res) => {
 };
 
 /**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getCurrentUser = async (req, res) => {
+  try {
+    if(!req.headers.authorization) {
+      throw "Unauthorized";
+    }
+    const bearerToken = req.headers.authorization.split(' ')[1];
+
+    if(bearerToken == "undefined") throw "Unauthorized";
+    const privateKey = fs.readFileSync(`./privateKey.key`);
+    const result = jwt.verify(bearerToken, privateKey);
+    const currentUser = await prisma.user.findUnique({
+      where: {
+        email: result.email
+      }
+    });
+    if (!currentUser) throw "User not authenticated";
+
+    res.status(200).json({status: true, data: currentUser});
+  } catch (err) {
+    res.status(401).json({status: false, error: err});
+  }
+}
+/**
  *
  * @param {Request} req
  * @param {Response} res

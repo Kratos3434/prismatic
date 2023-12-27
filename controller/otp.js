@@ -83,7 +83,7 @@ module.exports.sendOtp = async (req, res) => {
                 }
             })
         }
-        await emailService.send("keithcarlos34@gmail.com", otp);
+        await emailService.send(email, otp);
         console.log("Retrieve token:", retrieveToken);
         res.cookie("retrieveToken", retrieveToken, {
             httpOnly: false,

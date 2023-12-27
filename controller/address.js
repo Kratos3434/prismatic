@@ -10,9 +10,9 @@ const prisma = new PrismaClient();
 module.exports.list = async (req, res) => {
   try {
     const addresses = await prisma.address.findMany();
-    res.status(200).json({status: false, data: addresses});
+    res.status(200).json({status: true, data: addresses});
   } catch (err) {
-    res.status(400).json({status: true, error: err});
+    res.status(400).json({status: false, error: err});
   }
 }
 

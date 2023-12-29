@@ -827,6 +827,15 @@ module.exports.getByName = async (req, res) => {
     const user = await prisma.user.findUnique({
       where: {
         id: +id, firstName, lastName
+      },
+      include: {
+        posts: {
+          orderBy: [
+            {
+              createdAt: 'desc'
+            }
+          ]
+        }
       }
     });
 

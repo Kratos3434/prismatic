@@ -848,6 +848,41 @@ module.exports.getByName = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.updateBio = async (req, res) => {
+  const { email, bio } = req.body;
+  try {
+    if (!email) throw "Email is missing";
+    if (!bio) throw "Bio is required";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email
+      }
+    });
+
+    if (!user) throw "User does not exist";
+
+    await prisma.user.update({
+      where: {
+        email
+      },
+      data: {
+        bio,
+        updatedAt: new Date()
+      }
+    });
+
+    res.status(200).json({status: true, msg: "Bio updated successfully!"});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

@@ -27,6 +27,8 @@ model User {
   posts      Post[]
   replies    Reply[]
   resetToken ResetToken?
+  bio String?
+  addressFrom String?
 }
 
 model Address {

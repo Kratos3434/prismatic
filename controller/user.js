@@ -853,6 +853,57 @@ module.exports.getByName = async (req, res) => {
  * @param {Request} req 
  * @param {Response} res 
  */
+module.exports.validateProfile = async (req, res) => {
+  const {name} = req.params;
+  try {
+    const [firstName, lastName, id] = name.split('.');
+
+    if(!firstName) throw "First name is missing";
+    if(!lastName) throw "Last name is missing";
+    if(!id) throw "ID is missing";
+    if(!+id) throw "Id must be a valid number";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: +id, firstName, lastName
+      },
+      include: {
+        posts: {
+          orderBy: [
+            {
+              createdAt: 'desc'
+            }
+          ]
+        }
+      }
+    });
+
+    if(!user) throw "User does not exist";
+
+    if(!req.headers.authorization) {
+      throw "Unauthorized";
+    }
+    const bearerToken = req.headers.authorization.split(' ')[1];
+
+    if(bearerToken == "undefined") throw "Unauthorized";
+    const privateKey = fs.readFileSync(`privateKey.key`);
+    const result = jwt.verify(bearerToken, privateKey);
+    console.log(result.firstName);
+    if (result.id == +id && result.firstName == firstName && result.lastName == lastName) {
+      return res.status(200).json({status: true, msg: "Verified"});
+    }
+    throw "Unverified";
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
 module.exports.updateBio = async (req, res) => {
   const { email, bio } = req.body;
   try {

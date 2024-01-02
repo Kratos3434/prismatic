@@ -19,5 +19,6 @@ router.patch("/update/profilepicture", auth.user, upload.single('profilepicture'
 router.patch("/update/coverpicture", auth.user, upload.single('coverpicture'), user.changeCoverPhoto);
 router.get("/current", auth.user, user.getCurrentUser);
 router.patch("/update/bio", auth.user, user.updateBio);
+router.get("/validate/current/:name", auth.user, user.validateProfile);
 
 module.exports = router;

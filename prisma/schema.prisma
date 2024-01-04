@@ -27,6 +27,7 @@ model User {
   posts      Post[]
   replies    Reply[]
   resetToken ResetToken?
+  likes Like[]
   bio String?
   addressFrom String?
 }
@@ -52,7 +53,7 @@ model Post {
   shares       Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime?
-  likes        Int       @default(0)
+  likes        Like[]
   comments     Comment[]
   author       User      @relation(fields: [authorId], references: [id])
 }
@@ -95,4 +96,14 @@ model TemporaryUser {
   gender    String @db.VarChar(1)
   password  String
   retrieveToken String @unique
+}
+
+model Like {
+  id Int @id @default(autoincrement())
+  post Post @relation(fields: [postId], references: [id])
+  postId Int
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
 }

@@ -569,17 +569,31 @@ module.exports.likePost = async (req, res) => {
 
         if(!post) throw "This post does not exist";
 
-        await prisma.post.update({
-            where: {
-                id: post.id
-            },
-            data: {
-                likes: post.likes += 1,
-                updatedAt: new Date()
-            }
+        const like = await prisma.like.findFirst({
+          where: {
+            userId: user.id
+          }
         });
 
-        res.status(200).json({status: true, msg: "Post liked successfully"});
+        if (!like) {
+          const newLike = await prisma.like.create({
+            data: {
+              postId: post.id,
+              userId: user.id
+            }
+          });
+
+          return res.status(200).json({status: true, msg: "Post liked successfully", data: newLike});
+        } else {
+          const dislike = await prisma.like.delete({
+            where: {
+              id: like.id
+            }
+          });
+
+          return res.status(200).json({ status: true, msg: "Post unliked successfully", data: dislike });
+        }
+
     } catch (err) {
         console.log(err)
         res.status(400).json({status: false, error: err});
@@ -834,8 +848,12 @@ module.exports.getByName = async (req, res) => {
             {
               createdAt: 'desc'
             }
-          ]
-        }
+          ],
+          include: {
+            likes: true
+          }
+        },
+        likes: true
       }
     });
 

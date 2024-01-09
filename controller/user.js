@@ -148,6 +148,7 @@ module.exports.signin = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: false,
       maxAge: 24 * 60 * 60 * 1000,
+      secure: true
     });
 
     res.status(200).json({ status: true, data: userNoPassword });
@@ -569,13 +570,20 @@ module.exports.likePost = async (req, res) => {
 
         if(!post) throw "This post does not exist";
 
-        const like = await prisma.like.findFirst({
+        const like = await prisma.post.findUnique({
           where: {
-            userId: user.id
+            id: +postId
+          },
+          include: {
+            likes: {
+              where: {
+                userId: user.id
+              }
+            }
           }
-        });
+        })
 
-        if (!like) {
+        if (like.likes.length === 0) {
           const newLike = await prisma.like.create({
             data: {
               postId: post.id,
@@ -587,12 +595,14 @@ module.exports.likePost = async (req, res) => {
         } else {
           const dislike = await prisma.like.delete({
             where: {
-              id: like.id
+              id: like.likes[0].id
             }
           });
 
           return res.status(200).json({ status: true, msg: "Post unliked successfully", data: dislike });
         }
+
+        // res.status(200).json({status: true, data: like});
 
     } catch (err) {
         console.log(err)

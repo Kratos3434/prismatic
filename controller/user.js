@@ -962,6 +962,98 @@ module.exports.updateBio = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getUnverified = async (req, res) => {
+  try {
+    const unverified = await prisma.temporaryUser.findMany({});
+    res.status(200).json({status: true, data: unverified});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByCurrentMonth = async (req, res) => {
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(lastDay.toISOString().split('T')[0]),
+          gte: new Date(firstDay.toISOString().split('T')[0])
+        }
+      }
+    })
+
+    res.status(200).json({ status: true, data: users });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getUnverifiedByCurrentMonth = async (req, res) => {
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  try {
+    const users = await prisma.temporaryUser.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(lastDay.toISOString().split('T')[0]),
+          gte: new Date(firstDay.toISOString().split('T')[0])
+        }
+      }
+    })
+
+    res.status(200).json({ status: true, data: users });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByCurrentWeek = async (req, res) => {
+  function getMonday(d) {
+    d = new Date(d);
+    const day = d.getDay(),
+      diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
+    return new Date(d.setDate(diff));
+  }
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(getMonday(new Date()).toISOString().split('T')[0]),
+          gte: new Date(new Date().toISOString().split('T')[0])
+        }
+      }
+    })
+    
+    res.status(200).json({ status: true, data: users });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

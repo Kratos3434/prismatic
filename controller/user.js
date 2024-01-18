@@ -860,7 +860,8 @@ module.exports.getByName = async (req, res) => {
             }
           ],
           include: {
-            likes: true
+            likes: true,
+            author: true
           }
         },
         likes: true

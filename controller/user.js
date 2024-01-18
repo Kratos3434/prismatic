@@ -897,6 +897,9 @@ module.exports.validateProfile = async (req, res) => {
       },
       include: {
         posts: {
+          include: {
+            author: true
+          },
           orderBy: [
             {
               createdAt: 'desc'

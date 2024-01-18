@@ -146,7 +146,7 @@ module.exports.signin = async (req, res) => {
     const token = jwt.sign(userNoPassword, privateKey, { expiresIn: "1d", algorithm: 'RS256' });
     console.log("Sign token:", token)
     res.cookie("token", token, {
-      httpOnly: false,
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       secure: true
     });

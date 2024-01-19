@@ -234,6 +234,19 @@ module.exports.updatePhone = async (req, res) => {
 };
 
 /**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.logout = async (req, res) => {
+  try {
+    res.clearCookie("token");
+    res.status(200).json({status: true, msg: "Logout successful"});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}
+/**
  *
  * @param {Request} req
  * @param {Response} res
@@ -548,6 +561,7 @@ module.exports.addCommentToPost = async (req, res) => {
  * @param {Response} res 
  */
 module.exports.likePost = async (req, res) => {
+  //todo: Optimize like so it feels like it's instant (i.e. faster query, query once)
     const { email, postId } = req.body;
     try {
         if(!email) throw "Email is required";
@@ -565,25 +579,19 @@ module.exports.likePost = async (req, res) => {
         const post = await prisma.post.findUnique({
             where: {
                 id: postId
+            },
+            include: {
+              likes: {
+                where: {
+                  userId: user.id
+                }
+              }
             }
         });
 
         if(!post) throw "This post does not exist";
 
-        const like = await prisma.post.findUnique({
-          where: {
-            id: +postId
-          },
-          include: {
-            likes: {
-              where: {
-                userId: user.id
-              }
-            }
-          }
-        })
-
-        if (like.likes.length === 0) {
+        if (post.likes.length === 0) {
           const newLike = await prisma.like.create({
             data: {
               postId: post.id,
@@ -595,7 +603,7 @@ module.exports.likePost = async (req, res) => {
         } else {
           const dislike = await prisma.like.delete({
             where: {
-              id: like.likes[0].id
+              id: post.likes[0].id
             }
           });
 

@@ -35,6 +35,55 @@ module.exports.list = async (req, res) => {
  * @param {Request} req 
  * @param {Response} res 
  */
+module.exports.deletePostById = async (req, res) => {
+  const { email, postId } = req.body;
+  try {
+    if (!email) throw "Email is missing";
+    if (!postId) throw "Post Id is required";
+    if (!+postId) throw "Post Id must be a valid number";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email
+      },
+      include: {
+        posts: {
+          where: {
+            id: +postId
+          }
+        }
+      }
+    });
+
+    if (!user) throw "This user does not exist";
+    if (user.posts.length === 0) throw "This post does not exist";
+    if (!user.posts[0]) throw "This post does not exist";
+
+    await prisma.like.deleteMany({
+      where: {
+        postId: +postId,
+      }
+    })
+
+    const post = await prisma.post.delete({
+      where: {
+        id: +postId
+      }
+    });
+
+    await cloudinary.uploader.destroy(post.featureImage.substring(post.featureImage.lastIndexOf('/') + 1, post.featureImage.lastIndexOf('.')));
+    res.status(200).json({ status: true, msg: "Post deleted successfully" });
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
 module.exports.getCurrentUser = async (req, res) => {
   try {
     if(!req.headers.authorization) {

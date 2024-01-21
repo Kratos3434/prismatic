@@ -20,5 +20,6 @@ router.patch("/update/coverpicture", auth.user, upload.single('coverpicture'), u
 router.get("/current", auth.user, user.getCurrentUser);
 router.patch("/update/bio", auth.user, user.updateBio);
 router.get("/validate/current/:name", auth.user, user.validateProfile);
+router.delete("/delete/post", auth.user, user.deletePostById);
 
 module.exports = router;

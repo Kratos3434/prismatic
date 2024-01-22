@@ -30,7 +30,7 @@ module.exports.sendLink = async (to, url) => {
             to,
             subject: "Password Reset Link",
             text: `Here's your password reset link, ${url}.
-                   It will expire in 5-6 minutes`
+                   It will expire in 5-6 minutes. If you didn't make this request, please ignore this message`
         }
 
         await transporter.sendMail(mailOptions);

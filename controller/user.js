@@ -8,6 +8,8 @@ const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 const crypto = require('crypto');
 const fs = require('fs');
+const { sendLink } = require('./email');
+
 //const ResetToken = require('../mongoose/schema/resetToken');
 
 /**
@@ -776,7 +778,8 @@ module.exports.forgotPassword = async (req, res) => {
         id: resetToken.user.id
       },
       data: {
-        password: hash
+        password: hash,
+        updatedAt: new Date()
       }
     });
 
@@ -813,8 +816,10 @@ module.exports.sendResetPasswordLink = async (req, res) => {
         resetToken: true
       }
     });
-
-    if(!user) throw "This email does not exist";
+    //if user doesn't exist, don't send any email, just send as success
+    if(!user) {
+     return res.status(200).json({status: true, msg: "Password reset link sent successfully"});
+    }
     const token = crypto.randomBytes(32).toString('hex');
     console.log("Token:", token);
     const url = `https://www.faceclam.com/reset?token=${token}`;
@@ -841,8 +846,8 @@ module.exports.sendResetPasswordLink = async (req, res) => {
         }
       });
     }
-
-    res.status(200).json({status: true, data: url, msg: "Password reset link sent successfully"});
+    await sendLink(email, url);
+    return res.status(200).json({status: true, msg: "Password reset link sent successfully"});
   } catch (err) {
     console.log(err)
     res.status(400).json({status: false, error: err});

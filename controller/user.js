@@ -348,7 +348,11 @@ module.exports.addPost = async (req, res) => {
               error: "Something went wrong while uploading",
             });
         }
-        processPost(uploaded.url);
+        try {
+          processPost(uploaded.url);
+        } catch (err) {
+          throw err;
+        }
       });
 
       const processPost = async (imageUrl) => {
@@ -813,7 +817,7 @@ module.exports.sendResetPasswordLink = async (req, res) => {
     if(!user) throw "This email does not exist";
     const token = crypto.randomBytes(32).toString('hex');
     console.log("Token:", token);
-    const url = `http://localhost:3000/reset?token=${token}`;
+    const url = `https://www.faceclam.com/reset?token=${token}`;
 
     if(user.resetToken && user.resetToken.token) {
       await prisma.resetToken.update({

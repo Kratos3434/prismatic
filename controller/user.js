@@ -61,12 +61,6 @@ module.exports.deletePostById = async (req, res) => {
     if (user.posts.length === 0) throw "This post does not exist";
     if (!user.posts[0]) throw "This post does not exist";
 
-    await prisma.like.deleteMany({
-      where: {
-        postId: +postId,
-      }
-    })
-
     const post = await prisma.post.delete({
       where: {
         id: +postId

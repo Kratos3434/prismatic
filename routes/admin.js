@@ -7,7 +7,7 @@ const address = require('../controller/address');
 const comment = require('../controller/comment');
 
 router.get("/user/list", auth.admin, user.list);
-router.get('/post/list', auth.admin, post.list);
+router.get('/post/list', post.list);
 router.get("/address/list", auth.admin, address.list);
 router.get("/user/authenticate", auth.authUser, (req, res) => {
     res.status(200).json({status: true, msg: "Authenticated user"});

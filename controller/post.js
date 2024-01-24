@@ -17,7 +17,11 @@ module.exports.list = async (req, res) => {
       ],
       include: {
         author: true,
-        comments: true,
+        comments: {
+          include: {
+            author: true
+          }
+        },
         likes: true
       }
     });

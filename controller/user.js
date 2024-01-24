@@ -566,39 +566,47 @@ module.exports.deletePost = async (req, res) => {
  * @param {Response} res 
  */
 module.exports.addCommentToPost = async (req, res) => {
-    const { email, postId, comment } = req.body;
+    const { postId, comment } = req.body;
     try {
-        if(!email) throw "Email is required";
+        const bearerToken = req.headers.authorization.split(' ')[1];
+        const ILLEGAL_MSG = "Improper use of this API is illegal, this incident will be reported!!!"
+        // if(!email) throw "Email is required";
         if(!postId) throw "Post Id is rquired";
         if(!+postId) throw "Post Id is not a valid number";
         if(!comment) throw "Comment is required";
 
+        const privateKey = fs.readFileSync(`privateKey.key`);
+        const result = jwt.verify(bearerToken, privateKey);
+
+        if (!result) throw ILLEGAL_MSG;
+        if (!result.email) throw ILLEGAL_MSG;
+
         const user = await prisma.user.findUnique({
-            where: {
-                email
-            },
-            include: {
-                posts: {
-                    where: {
-                        id: +postId
-                    }
-                }
-            }
+          where: {
+            email: result.email
+          },
         });
 
-        if(!user) throw "This user does not exist";
-        if(user.posts.length == 0) throw "This post does not exist";
+        if (!user) throw ILLEGAL_MSG;
+        
+        const post = await prisma.post.findUnique({
+          where: {
+            id: +postId
+          }
+        })
 
+        if (!post) throw ILLEGAL_MSG;
+        
         const newComment = await prisma.comment.create({
-            data: {
-                comment,
-                authorId: user.id,
-                postId: user.posts[0].id
-            }
-        });
+          data: {
+            comment,
+            authorId: user.id,
+            postId: post.id
+          }
+        })
 
-        res.status(200).json({status: true, msg: "Comment successfully added", data: newComment});
-    } catch (err) {
+        res.status(200).json({ status: true, msg: "Testing successful", data: newComment });
+    } catch (err) { 
         console.log(err);
         res.status(400).json({status: false, error: err});
     }

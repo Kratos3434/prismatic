@@ -602,10 +602,18 @@ module.exports.addCommentToPost = async (req, res) => {
             comment,
             authorId: user.id,
             postId: post.id
+          },
+          include: {
+            post: {
+              include: {
+                author: true,
+                comments: true
+              }
+            }
           }
-        })
+        });
 
-        res.status(200).json({ status: true, msg: "Testing successful", data: newComment });
+        res.status(200).json({ status: true, msg: "New comment added", data: newComment });
     } catch (err) { 
         console.log(err);
         res.status(400).json({status: false, error: err});

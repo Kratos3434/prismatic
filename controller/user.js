@@ -607,7 +607,11 @@ module.exports.addCommentToPost = async (req, res) => {
             post: {
               include: {
                 author: true,
-                comments: true
+                comments: {
+                  include: {
+                    author: true
+                  }
+                }
               }
             }
           }

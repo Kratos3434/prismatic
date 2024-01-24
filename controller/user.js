@@ -611,7 +611,8 @@ module.exports.addCommentToPost = async (req, res) => {
                   include: {
                     author: true
                   }
-                }
+                },
+                likes: true
               }
             }
           }

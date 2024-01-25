@@ -942,7 +942,7 @@ module.exports.getByName = async (req, res) => {
           ],
           include: {
             likes: true,
-            author: true
+            comments: true
           }
         },
         likes: true

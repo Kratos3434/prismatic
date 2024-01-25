@@ -942,7 +942,11 @@ module.exports.getByName = async (req, res) => {
           ],
           include: {
             likes: true,
-            comments: true,
+            comments: {
+              include: {
+                author: true
+              }
+            },
             author: true
           }
         },
@@ -1006,9 +1010,8 @@ module.exports.validateProfile = async (req, res) => {
     if (result.id == +id && result.firstName == firstName && result.lastName == lastName) {
       return res.status(200).json({status: true, msg: "Verified"});
     }
-    throw "Unverified";
+    throw {currentUser: result, msg: "Unverified" };
   } catch (err) {
-    console.log(err)
     res.status(400).json({status: false, error: err});
   }
 }

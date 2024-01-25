@@ -8,6 +8,8 @@ const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 const crypto = require('crypto');
 const fs = require('fs');
+const { sendLink } = require('./email');
+
 //const ResetToken = require('../mongoose/schema/resetToken');
 
 /**
@@ -29,6 +31,49 @@ module.exports.list = async (req, res) => {
     res.status(400).json({ status: false, error: err });
   }
 };
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.deletePostById = async (req, res) => {
+  const { email, postId } = req.body;
+  try {
+    if (!email) throw "Email is missing";
+    if (!postId) throw "Post Id is required";
+    if (!+postId) throw "Post Id must be a valid number";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email
+      },
+      include: {
+        posts: {
+          where: {
+            id: +postId
+          }
+        }
+      }
+    });
+
+    if (!user) throw "This user does not exist";
+    if (user.posts.length === 0) throw "This post does not exist";
+    if (!user.posts[0]) throw "This post does not exist";
+
+    const post = await prisma.post.delete({
+      where: {
+        id: +postId
+      }
+    });
+
+    await cloudinary.uploader.destroy(post.featureImage.substring(post.featureImage.lastIndexOf('/') + 1, post.featureImage.lastIndexOf('.')));
+    res.status(200).json({ status: true, msg: "Post deleted successfully" });
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ status: false, error: err });
+  }
+}
 
 /**
  * 
@@ -146,7 +191,7 @@ module.exports.signin = async (req, res) => {
     const token = jwt.sign(userNoPassword, privateKey, { expiresIn: "1d", algorithm: 'RS256' });
     console.log("Sign token:", token)
     res.cookie("token", token, {
-      httpOnly: false,
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       secure: true
     });
@@ -234,6 +279,19 @@ module.exports.updatePhone = async (req, res) => {
 };
 
 /**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.logout = async (req, res) => {
+  try {
+    res.clearCookie("token");
+    res.status(200).json({status: true, msg: "Logout successful"});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}
+/**
  *
  * @param {Request} req
  * @param {Response} res
@@ -286,7 +344,11 @@ module.exports.addPost = async (req, res) => {
               error: "Something went wrong while uploading",
             });
         }
-        processPost(uploaded.url);
+        try {
+          processPost(uploaded.url);
+        } catch (err) {
+          throw err;
+        }
       });
 
       const processPost = async (imageUrl) => {
@@ -504,39 +566,60 @@ module.exports.deletePost = async (req, res) => {
  * @param {Response} res 
  */
 module.exports.addCommentToPost = async (req, res) => {
-    const { email, postId, comment } = req.body;
+    const { postId, comment } = req.body;
     try {
-        if(!email) throw "Email is required";
+        const bearerToken = req.headers.authorization.split(' ')[1];
+        const ILLEGAL_MSG = "Improper use of this API is illegal, this incident will be reported!!!"
+        // if(!email) throw "Email is required";
         if(!postId) throw "Post Id is rquired";
         if(!+postId) throw "Post Id is not a valid number";
         if(!comment) throw "Comment is required";
 
+        const privateKey = fs.readFileSync(`privateKey.key`);
+        const result = jwt.verify(bearerToken, privateKey);
+
+        if (!result) throw ILLEGAL_MSG;
+        if (!result.email) throw ILLEGAL_MSG;
+
         const user = await prisma.user.findUnique({
-            where: {
-                email
-            },
-            include: {
-                posts: {
-                    where: {
-                        id: +postId
-                    }
-                }
-            }
+          where: {
+            email: result.email
+          },
         });
 
-        if(!user) throw "This user does not exist";
-        if(user.posts.length == 0) throw "This post does not exist";
+        if (!user) throw ILLEGAL_MSG;
+        
+        const post = await prisma.post.findUnique({
+          where: {
+            id: +postId
+          }
+        })
 
+        if (!post) throw ILLEGAL_MSG;
+        
         const newComment = await prisma.comment.create({
-            data: {
-                comment,
-                authorId: user.id,
-                postId: user.posts[0].id
+          data: {
+            comment,
+            authorId: user.id,
+            postId: post.id
+          },
+          include: {
+            post: {
+              include: {
+                author: true,
+                comments: {
+                  include: {
+                    author: true
+                  }
+                },
+                likes: true
+              }
             }
+          }
         });
 
-        res.status(200).json({status: true, msg: "Comment successfully added", data: newComment});
-    } catch (err) {
+        res.status(200).json({ status: true, msg: "New comment added", data: newComment });
+    } catch (err) { 
         console.log(err);
         res.status(400).json({status: false, error: err});
     }
@@ -548,6 +631,7 @@ module.exports.addCommentToPost = async (req, res) => {
  * @param {Response} res 
  */
 module.exports.likePost = async (req, res) => {
+  //todo: Optimize like so it feels like it's instant (i.e. faster query, query once)
     const { email, postId } = req.body;
     try {
         if(!email) throw "Email is required";
@@ -565,25 +649,19 @@ module.exports.likePost = async (req, res) => {
         const post = await prisma.post.findUnique({
             where: {
                 id: postId
+            },
+            include: {
+              likes: {
+                where: {
+                  userId: user.id
+                }
+              }
             }
         });
 
         if(!post) throw "This post does not exist";
 
-        const like = await prisma.post.findUnique({
-          where: {
-            id: +postId
-          },
-          include: {
-            likes: {
-              where: {
-                userId: user.id
-              }
-            }
-          }
-        })
-
-        if (like.likes.length === 0) {
+        if (post.likes.length === 0) {
           const newLike = await prisma.like.create({
             data: {
               postId: post.id,
@@ -595,7 +673,7 @@ module.exports.likePost = async (req, res) => {
         } else {
           const dislike = await prisma.like.delete({
             where: {
-              id: like.likes[0].id
+              id: post.likes[0].id
             }
           });
 
@@ -715,7 +793,8 @@ module.exports.forgotPassword = async (req, res) => {
         id: resetToken.user.id
       },
       data: {
-        password: hash
+        password: hash,
+        updatedAt: new Date()
       }
     });
 
@@ -752,11 +831,13 @@ module.exports.sendResetPasswordLink = async (req, res) => {
         resetToken: true
       }
     });
-
-    if(!user) throw "This email does not exist";
+    //if user doesn't exist, don't send any email, just send as success
+    if(!user) {
+     return res.status(200).json({status: true, msg: "Password reset link sent successfully"});
+    }
     const token = crypto.randomBytes(32).toString('hex');
     console.log("Token:", token);
-    const url = `http://localhost:3000/reset?token=${token}`;
+    const url = `https://www.faceclam.com/reset?token=${token}`;
 
     if(user.resetToken && user.resetToken.token) {
       await prisma.resetToken.update({
@@ -780,8 +861,8 @@ module.exports.sendResetPasswordLink = async (req, res) => {
         }
       });
     }
-
-    res.status(200).json({status: true, data: url, msg: "Password reset link sent successfully"});
+    await sendLink(email, url);
+    return res.status(200).json({status: true, msg: "Password reset link sent successfully"});
   } catch (err) {
     console.log(err)
     res.status(400).json({status: false, error: err});
@@ -898,6 +979,9 @@ module.exports.validateProfile = async (req, res) => {
       },
       include: {
         posts: {
+          include: {
+            author: true
+          },
           orderBy: [
             {
               createdAt: 'desc'
@@ -960,6 +1044,98 @@ module.exports.updateBio = async (req, res) => {
     res.status(200).json({status: true, msg: "Bio updated successfully!"});
   } catch (err) {
     res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getUnverified = async (req, res) => {
+  try {
+    const unverified = await prisma.temporaryUser.findMany({});
+    res.status(200).json({status: true, data: unverified});
+  } catch (err) {
+    res.status(400).json({status: false, error: err});
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByCurrentMonth = async (req, res) => {
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(lastDay.toISOString().split('T')[0]),
+          gte: new Date(firstDay.toISOString().split('T')[0])
+        }
+      }
+    })
+
+    res.status(200).json({ status: true, data: users });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getUnverifiedByCurrentMonth = async (req, res) => {
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  try {
+    const users = await prisma.temporaryUser.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(lastDay.toISOString().split('T')[0]),
+          gte: new Date(firstDay.toISOString().split('T')[0])
+        }
+      }
+    })
+
+    res.status(200).json({ status: true, data: users });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByCurrentWeek = async (req, res) => {
+  function getMonday(d) {
+    d = new Date(d);
+    const day = d.getDay(),
+      diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
+    return new Date(d.setDate(diff));
+  }
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(getMonday(new Date()).toISOString().split('T')[0]),
+          gte: new Date(new Date().toISOString().split('T')[0])
+        }
+      }
+    })
+    
+    res.status(200).json({ status: true, data: users });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
   }
 }
 

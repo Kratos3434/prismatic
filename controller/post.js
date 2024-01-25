@@ -17,7 +17,11 @@ module.exports.list = async (req, res) => {
       ],
       include: {
         author: true,
-        comments: true,
+        comments: {
+          include: {
+            author: true
+          }
+        },
         likes: true
       }
     });
@@ -53,6 +57,66 @@ module.exports.getById = async (req, res) => {
     res.status(200).json({ status: true, data: post });
   } catch (err) {
     console.log(err)
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByCurrentMonth = async (req, res) => {
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  try {
+    const posts = await prisma.post.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(lastDay.toISOString().split('T')[0]),
+          gte: new Date(firstDay.toISOString().split('T')[0])
+        }
+      }
+    })
+
+    res.status(200).json({ status: true, data: posts });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByCurrentWeek = async (req, res) => {
+  function getMonday(d) {
+    d = new Date(d);
+    const day = d.getDay(),
+      diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
+    return new Date(d.setDate(diff));
+  }
+  function endOfWeek(date)
+  {
+     
+    var lastday = date.getDate() - (date.getDay() - 1) + 6;
+    return new Date(date.setDate(lastday));
+ 
+  }
+  try {
+    const posts = await prisma.post.findMany({
+      where: {
+        createdAt: {
+          lte: new Date(getMonday(new Date()).toISOString().split('T')[0]),
+          gte: new Date(endOfWeek(new Date()).toISOString().split('T')[0])
+        }
+      }
+    })
+    
+    res.status(200).json({ status: true, data: posts });
+  } catch (err) {
     res.status(400).json({ status: false, error: err });
   }
 }

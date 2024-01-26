@@ -1143,6 +1143,59 @@ module.exports.getByCurrentWeek = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.sendFriendRequest = async (req, res) => {
+  const { friendId } = req.params;
+  try {
+    if (!friendId) throw "Friend ID is required";
+    if (!+friendId) throw "Friend ID must be a valid number";
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    const privateKey = fs.readFileSync(`privateKey.key`);
+    const { email } = jwt.verify(bearerToken, privateKey);
+    if (!email) throw "Misproper use of api, this incident will be reported";
+
+    const requester = await prisma.user.findUnique({
+      where: {
+        email
+      }
+    });
+
+    if (!requester) throw "Misproper use of api, this incident will be reported";
+
+    const requestee = await prisma.user.findUnique({
+      where: {
+        id: +friendId
+      },
+      include: {
+        friendRequests: {
+          where: {
+            requesterId: requester.id
+          }
+        }
+      }
+    });
+
+    if (!requestee) throw "This user that you're trying to add does not exist";
+    if (requestee.friendRequests.length !== 0) throw "Friend request have already been sent";
+
+    await prisma.friendRequest.create({
+      data: {
+        userId: requestee.id,
+        requesterId: requester.id
+      }
+    })
+
+    res.status(200).json({ status: true, msg: "Friend request sent successfully" });
+  } catch (err) {
+    console.log(err)
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

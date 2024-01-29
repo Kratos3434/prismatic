@@ -666,6 +666,19 @@ module.exports.likePost = async (req, res) => {
             data: {
               postId: post.id,
               userId: user.id
+            },
+            include: {
+              post: {
+                include: {
+                  author: true,
+                  comments: {
+                    include: {
+                      author: true
+                    }
+                  },
+                  likes: true
+                }
+              }
             }
           });
 
@@ -674,6 +687,19 @@ module.exports.likePost = async (req, res) => {
           const dislike = await prisma.like.delete({
             where: {
               id: post.likes[0].id
+            },
+            include: {
+              post: {
+                include: {
+                  author: true,
+                  comments: {
+                    include: {
+                      author: true
+                    }
+                  },
+                  likes: true
+                }
+              }
             }
           });
 

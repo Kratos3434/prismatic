@@ -697,7 +697,13 @@ module.exports.likePost = async (req, res) => {
                       author: true
                     }
                   },
-                  likes: true
+                  likes: {
+                    where: {
+                      id: {
+                        not: post.likes[0].id
+                      }
+                    }
+                  }
                 }
               }
             }

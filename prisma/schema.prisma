@@ -60,6 +60,7 @@ model Post {
   updatedAt    DateTime?
   likes        Like[]
   comments     Comment[]
+  notifications Notification[]
   author       User      @relation(fields: [authorId], references: [id])
 }
 
@@ -133,6 +134,8 @@ model Notification {
   senderId Int
   type String
   isRead Boolean @default(false)
+  post Post @relation(fields: [postId], references: [id])
+  postId Int
   createdAt DateTime
   updatedAt DateTime?
 }

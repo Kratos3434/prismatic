@@ -1228,6 +1228,67 @@ module.exports.sendFriendRequest = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.sendNotification = async (req, res) => {
+  const { recipientId, type, description } = req.body;
+  try {
+    if (!recipientId) throw "Recipient Id is required";
+    if (!type) throw "Type is required";
+    if (!description) throw "Description is required";
+    if (!+recipientId) throw "Recipient Id must be a valid number";
+
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    const privateKey = fs.readFileSync(`privateKey.key`);
+    const { email } = jwt.verify(bearerToken, privateKey);
+    if (!email) throw "Misproper use of api, this incident will be reported";
+
+    const sender = await prisma.user.findUnique({
+      where: {
+        email
+      }
+    });
+
+    if (!sender) throw "Misproper use of api, this incident will be reported";
+
+    const recipient = await prisma.user.findUnique({
+      where: {
+        id: +recipientId
+      },
+      include: {
+        notifications: {
+          where: {
+            senderId: sender.id,
+            type
+          }
+        }
+      }
+    });
+
+    if (!recipient) throw "This user does not exist";
+    if (recipient.notifications.length > 0) {
+      return res.status(304).json({status: true, msg: "Notification already sent"})
+    }
+
+    const newNotification = await prisma.notification.create({
+      data: {
+        recipientId: recipient.id,
+        senderId: sender.id,
+        type,
+        createdAt: new Date(),
+        description
+      }
+    });
+
+    return res.status(200).json({ status: true, msg: "Notification sent", data: newNotification});
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

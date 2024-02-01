@@ -3,6 +3,7 @@ const router = express.Router();
 const auth = require('../auth');
 const user = require('../controller/user');
 const address = require('../controller/address');
+const notification = require('../controller/notification');
 const multer = require('multer');
 const upload = multer();
 
@@ -22,5 +23,6 @@ router.patch("/update/bio", auth.user, user.updateBio);
 router.get("/validate/current/:name", auth.user, user.validateProfile);
 router.delete("/delete/post", auth.user, user.deletePostById);
 router.post("/send/request/:friendId", auth.user, user.sendFriendRequest);
+router.get("/notification/:recipientId", auth.user, notification.getByRecipientId);
 
 module.exports = router;

@@ -22,7 +22,11 @@ module.exports.list = async (req, res) => {
             author: true
           }
         },
-        likes: true
+        likes: {
+          include: {
+            user: true
+          }
+        }
       }
     });
     res.status(200).json({status: true, data: posts});

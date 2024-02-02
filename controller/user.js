@@ -367,7 +367,18 @@ module.exports.addPost = async (req, res) => {
       };
 
     } else {
-        return res.status(400).json({status: false, error: "Image is required"});
+        const newPost = await prisma.post.create({
+          data: {
+            description,
+            author: {
+              connect: {
+                id: user.id
+              }
+            }
+          }
+        });
+
+        return res.status(200).json({ status: true, data: newPost, msg: "Post successfully added" });
     }
   } catch (err) {
     res.status(400).json({ status: false, error: err });

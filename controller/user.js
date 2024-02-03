@@ -297,9 +297,14 @@ module.exports.logout = async (req, res) => {
  * @param {Response} res
  */
 module.exports.addPost = async (req, res) => {
-  const { email, description } = req.body;
+  const { description } = req.body;
   try {
-    if (!email) throw "Email is required";
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    if (bearerToken === "undefined" || !bearerToken) throw "Invalid use of api, this incident will be reported";
+
+    const privateKey = fs.readFileSync(`privateKey.key`);
+    const { email } = jwt.verify(bearerToken, privateKey);
+    if (!email) throw "Invalid use of api, this incident will be reported";
     if (!description) throw "Description is required";
 
     const user = await prisma.user.findUnique({

@@ -24,5 +24,6 @@ router.get("/validate/current/:name", auth.user, user.validateProfile);
 router.delete("/delete/post", auth.user, user.deletePostById);
 router.post("/send/request/:friendId", auth.user, user.sendFriendRequest);
 router.get("/notification/:recipientId", auth.user, notification.getByRecipientId);
+router.get("/post/notifications", auth.user, user.getPostNotifications);
 
 module.exports = router;

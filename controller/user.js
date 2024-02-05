@@ -1305,6 +1305,47 @@ module.exports.sendNotification = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getPostNotifications = async (req, res) => {
+  try {
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    if (bearerToken === "undefined" || !bearerToken) throw "Invalid access";
+
+    const privateKey = fs.readFileSync(`privateKey.key`);
+    const { id } = jwt.verify(bearerToken, privateKey);
+    if (!id) throw "Invalid use of API, this incident will be reported";
+
+    const _notifications = await prisma.post.findMany({
+      where: {
+        notifications: {
+          some: {
+            recipientId: +id
+          },
+        },
+        authorId: +id
+      },
+      include: {
+        notifications: {
+          include: {
+            sender: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }
+      }
+    })
+
+    res.status(200).json({ status: true, data: _notifications })
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
 //!WARNING this is only for testing and should not be in production
 /**
  *

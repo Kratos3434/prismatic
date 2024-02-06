@@ -7,6 +7,7 @@ const address = require('../controller/address');
 const comment = require('../controller/comment');
 const like = require('../controller/like');
 const notification = require('../controller/notification');
+const friendrequest = require('../controller/friendRequest');
 
 router.get("/user/list", auth.admin, user.list);
 router.get('/post/list', post.list);
@@ -29,5 +30,6 @@ router.delete("/delete/users", auth.admin, user.deleteAll);
 router.delete("/delete/comments", comment.deleteAll);
 router.delete("/delete/likes", auth.admin, like.deleteAll);
 router.delete("/delete/notifications", auth.admin, notification.deleteAll);
+router.delete("/delete/friendrequests", auth.admin, friendrequest.deleteAll);
 
 module.exports = router;

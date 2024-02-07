@@ -26,7 +26,6 @@ model User {
   address    Address?
   comments   Comment[]
   posts      Post[]
-  replies    Reply[]
   resetToken ResetToken?
   likes Like[]
   bio String?
@@ -73,17 +72,8 @@ model Comment {
   id        Int       @id @default(autoincrement())
   author    User      @relation(fields: [authorId], references: [id])
   post      Post      @relation(fields: [postId], references: [id])
-  replies   Reply[]
-}
-
-model Reply {
-  id        Int       @id @default(autoincrement())
-  commentId Int
-  authorId  Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime?
-  author    User      @relation(fields: [authorId], references: [id])
-  comment   Comment   @relation(fields: [commentId], references: [id])
+  replies   Comment[] @relation("Replies")
+  repliesRelation Comment[] @relation("Replies")
 }
 
 model ResetToken {

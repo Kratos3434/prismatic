@@ -13,5 +13,7 @@ router.get("/token/verify/:token", user.verifyResetToken);
 router.post("/forgot/password", user.forgotPassword);
 router.post("/resend/otp/:email", auth.authOtp, otp.resend);
 router.get("/user/:name", user.getByName);
+router.get("/post", post.getByUserIdAndId);
 router.get("/post/:id", post.getById);
+
 module.exports = router;

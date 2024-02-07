@@ -125,6 +125,47 @@ module.exports.getByCurrentWeek = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ */
+module.exports.getByUserIdAndId = async (req, res) => {
+  const { authorId, postId } = req.query;
+  try {
+    if (!authorId) throw "Name is required";
+    if (!+authorId) throw "Author id must be a valid number";
+    if (!postId) throw "Post id is required";
+    if (!+postId) throw "Post id must be a valid number";
+
+    const post = await prisma.post.findUnique({
+      where: {
+        id: +postId,
+        authorId: +authorId
+      },
+      include: {
+        author: true,
+        likes: {
+          include: {
+            user: true
+          }
+        },
+        comments: {
+          include: {
+            author: true
+          }
+        }
+      }
+    });
+
+    if (!post) throw "This user or post does not exist";
+
+    res.status(200).json({ status: true, data: post });
+  } catch (err) {
+    res.status(400).json({ status: false, error: err });
+  }
+}
+
 //!Warning: This is for testing and should not be in production!!!//
 /**
  * 
